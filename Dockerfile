@@ -1,4 +1,4 @@
-FROM anyscale/ray:2.20.0-py39
+FROM anyscale/ray:2.24.0-py39
 
 WORKDIR /home/ray
 

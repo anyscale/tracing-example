@@ -1,46 +1,41 @@
 from fastapi import FastAPI
-import ray
 from ray import serve
 import os
 from fp import FastAPIInstrumentor
+from opentelemetry import trace
+from opentelemetry.trace.status import Status, StatusCode
+from ray.anyscale.serve._private.tracing_utils import (
+    get_trace_context,
+)
 
-import requests
-import time
-
-
-
-# Use this var to test service inplace update. When the env var is updated, users see new return value.
 msg = os.getenv("SERVE_RESPONSE_MESSAGE", "Hello world!")
 
 app = FastAPI()
 FastAPIInstrumentor().instrument_app(app)
 
-
-@serve.deployment(route_prefix="/", num_replicas=2)
+@serve.deployment(route_prefix="/", num_replicas=1)
 @serve.ingress(app)
 class HelloWorld:
     @app.get("/")
     def hello(self):
-        return msg
+        # Create a new span that is associated with the current trace
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+            "application_span", context=get_trace_context()
+        ) as span:
+            replica_context = serve.get_replica_context()
+            # Update the span attributes and status
+            attributes = {
+                "return_message": msg, 
+                "deployment": replica_context.deployment,
+                "replica_id": replica_context.replica_id.unique_id
+            }
+            span.set_attributes(attributes)
+            span.set_status(
+                Status(status_code=StatusCode.OK, description="message is sent")
+            )
 
-    @app.get("/healthcheck")
-    def healthcheck(self):
-        return
-
-    @app.options("/")
-    def hello2(self):
-        return "hellllooo"
-
-
+            # Return message
+            return msg
 
 entrypoint = HelloWorld.bind()
-
-
-# The following block will be executed if the script is run by Python directly
-if __name__ == "__main__":
-
-    serve.run(entrypoint)
-
-    for i in range(5):
-        response = requests.get("http://127.0.0.1:8000/")
-        time.sleep(1)
