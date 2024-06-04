@@ -28,10 +28,11 @@ class HelloWorld:
             }
             span.set_attributes(attributes)
             span.set_status(
-                Status(status_code=StatusCode.OK, description="message is sent")
+                Status(status_code=StatusCode.OK)
             )
 
             # Return message
             return "Hello world!"
 
 entrypoint = HelloWorld.bind()
+
