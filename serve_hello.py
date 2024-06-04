@@ -8,12 +8,9 @@ from ray.anyscale.serve._private.tracing_utils import (
     get_trace_context,
 )
 
-msg = os.getenv("SERVE_RESPONSE_MESSAGE", "Hello world!")
-
 app = FastAPI()
 FastAPIInstrumentor().instrument_app(app)
-
-@serve.deployment(route_prefix="/", num_replicas=1)
+@serve.deployment
 @serve.ingress(app)
 class HelloWorld:
     @app.get("/")
@@ -26,7 +23,6 @@ class HelloWorld:
             replica_context = serve.get_replica_context()
             # Update the span attributes and status
             attributes = {
-                "return_message": msg, 
                 "deployment": replica_context.deployment,
                 "replica_id": replica_context.replica_id.unique_id
             }
@@ -36,6 +32,6 @@ class HelloWorld:
             )
 
             # Return message
-            return msg
+            return "Hello world!"
 
 entrypoint = HelloWorld.bind()

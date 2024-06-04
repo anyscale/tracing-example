@@ -1,7 +1,5 @@
 # Use Anyscale base image
-FROM anyscale/ray:2.24.0-py39
-
-WORKDIR /home/ray
+FROM anyscale/ray:2.24.0-slim-py39
 
 # Copy the requirements file into the docker image
 COPY requirements.txt .
