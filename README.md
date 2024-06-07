@@ -1,3 +1,4 @@
+
 # Tracing guide
 
 This guide provides three tutorials on how to add OpenTelemetry tracing for a Ray Serve applications in an
@@ -77,7 +78,6 @@ We import `FastAPIInstrumentor` from [here](https://github.com/anyscale/tracing-
 ```python title=serve_hello.py
 from fastapi import FastAPI
 from ray import serve
-import os
 from fp import FastAPIInstrumentor
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
@@ -87,7 +87,6 @@ from ray.anyscale.serve._private.tracing_utils import (
 
 app = FastAPI()
 FastAPIInstrumentor().instrument_app(app)
-
 @serve.deployment
 @serve.ingress(app)
 class HelloWorld:
@@ -99,7 +98,7 @@ class HelloWorld:
             "application_span", context=get_trace_context()
         ) as span:
             replica_context = serve.get_replica_context()
-            # Update the current span attributes and status
+            # Update the span attributes and status
             attributes = {
                 "deployment": replica_context.deployment,
                 "replica_id": replica_context.replica_id.unique_id
@@ -115,38 +114,10 @@ class HelloWorld:
 app = HelloWorld.bind()
 ```
 
-Then define a Dockerfile and environment dependencies.
-```
-# requirements.txt
-opentelemetry-instrumentation==0.45b0
-opentelemetry.instrumentation.asgi==0.45b0
-opentelemetry.instrumentation.fastapi==0.45b0
-opentelemetry-sdk==1.24.0
-opentelemetry-api==1.24.0
-```
-
-```Dockerfile title=Dockerfile
-# Use Anyscale base image
-FROM anyscale/ray:2.24.0-slim-py39
-
-# Copy the requirements file into the docker image
-COPY requirements.txt .
-
-# Install all dependencies specified in requirements.txt
-RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
-
-# Copy application definitions into the docker image
-COPY serve_hello.py /home/ray/serve_hello.py
-
-# Add working directory into python path so they are importable
-ENV PYTHONPATH=/home/ray
-```
-
-Next, we need to define the service configuration with a service YAML and `containerfile` that points to the Dockerfile we previously defined.
+Next, we need to define the service configuration with a service YAML.
 ```yaml title=service.yaml
 name: tracing-service
 working_dir: https://github.com/anyscale/tracing-example
-containerfile: ./Dockerfile
 applications:
 - name: my_app
     route_prefix:  '/'
@@ -255,17 +226,25 @@ def default_tracing_exporter() -> List[SpanProcessor]:
 Then define a Dockerfile and environment dependencies.
 ```
 # requirements.txt
-opentelemetry-instrumentation==0.45b0
-opentelemetry.instrumentation.asgi==0.45b0
+opentelemetry-sdk==1.25.0
+opentelemetry-api==1.25.0
+opentelemetry-instrumentation==0.46b0
 opentelemetry.instrumentation.fastapi==0.45b0
 opentelemetry-ext-honeycomb==1.3.0
-opentelemetry-sdk==1.24.0
-opentelemetry-api==1.24.0
+asgiref
+deprecated
+importlib-metadata
+zipp
+opentelemetry.instrumentation.asgi==0.46b0
+opentelemetry-util-http==0.46b0
+opentelemetry-semantic-conventions==0.46b0
+libhoney
+statsd
 ```
 
 ```Dockerfile title=Dockerfile
 # Use Anyscale base image
-FROM anyscale/ray:2.24.0-slim-py39
+FROM anyscale/ray:2.24.0-slim-py310
 
 # Copy the requirements file into the docker image
 COPY requirements.txt .
@@ -276,22 +255,34 @@ RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
 # Copy exporter file and application definitions into the docker image
 COPY exporter.py /home/ray/exporter.py
 COPY serve_hello.py /home/ray/serve_hello.py
+COPY fp.py /home/ray/fp.py
 
 # Add working directory into python path so they are importable
 ENV PYTHONPATH=/home/ray
 ```
 
-Next, we need to define the service configuration with a service YAML and `containerfile` that points to the Dockerfile we previously defined.
+Once we have defined the Dockerfile, we can build and push the
+docker image with the following commands.
+```bash
+# build the docker image
+docker build . -t my-registry/my-image:tag
+
+# push the docker image to your registry
+docker push my-registry/my-image:tag
+```
+
+Next, we need to define the service configuration with a service YAML and `image_uri` that points to the image. We also need to define the module in `exporter_import_path` to load the span exporters when tracing is setup. 
 ```yaml title=service.yaml
 name: tracing-service
 working_dir: https://github.com/anyscale/tracing-example
-containerfile: ./Dockerfile
+image_uri: <IMAGE_URI>
 applications:
 - name: my_app
     route_prefix:  '/'
     import_path: serve_hello:app
     runtime_env: { }
 tracing_config:
+  exporter_import_path: exporter:default_tracing_exporter
   enabled: True
   sampling_ratio: 1.0
 ```
@@ -302,5 +293,3 @@ anyscale service deploy -f service.yaml
 ```
 
 After querying your application, traces will be exported to the backend defined in `exporter.py`.
-
-![](/img/services/service-traces.png)
