@@ -1,4 +1,3 @@
-
 # Tracing guide
 
 This guide provides three tutorials on how to add OpenTelemetry tracing for a Ray Serve applications in an
@@ -114,7 +113,7 @@ class HelloWorld:
 app = HelloWorld.bind()
 ```
 
-Next, we need to define the service configuration with a service YAML.
+Next, define the service configuration with a service YAML.
 ```yaml title=service.yaml
 name: tracing-service
 working_dir: https://github.com/anyscale/tracing-example
@@ -246,13 +245,13 @@ statsd
 # Use Anyscale base image
 FROM anyscale/ray:2.24.0-slim-py310
 
-# Copy the requirements file into the docker image
+# Copy the requirements file into the Docker image
 COPY requirements.txt .
 
 # Install all dependencies specified in requirements.txt
 RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
 
-# Copy exporter file and application definitions into the docker image
+# Copy exporter file and application definitions into the Docker image
 COPY exporter.py /home/ray/exporter.py
 COPY serve_hello.py /home/ray/serve_hello.py
 COPY fp.py /home/ray/fp.py
@@ -261,17 +260,16 @@ COPY fp.py /home/ray/fp.py
 ENV PYTHONPATH=/home/ray
 ```
 
-Once we have defined the Dockerfile, we can build and push the
-docker image with the following commands.
+After defining the Dockerfile, build and push the Docker image with the following commands.
 ```bash
-# build the docker image
+# build the Docker image
 docker build . -t my-registry/my-image:tag
 
-# push the docker image to your registry
+# push the Docker image to your registry
 docker push my-registry/my-image:tag
 ```
 
-Next, we need to define the service configuration with a service YAML and `image_uri` that points to the image. We also need to define the module in `exporter_import_path` to load the span exporters when tracing is setup. 
+Next, define the service configuration with a service YAML and `image_uri` that points to the image. Also, define the module in `exporter_import_path` to load the span exporters when tracing is setup
 ```yaml title=service.yaml
 name: tracing-service
 working_dir: https://github.com/anyscale/tracing-example
