@@ -1,0 +1,12 @@
+name: tracing-service
+working_dir: https://github.com/anyscale/tracing-example
+image_uri: <IMAGE_URI>
+applications:
+- name: my_app
+    route_prefix:  '/'
+    import_path: serve_hello:app
+    runtime_env: { }
+tracing_config:
+  exporter_import_path: exporter:default_tracing_exporter
+  enabled: True
+  sampling_ratio: 1.0

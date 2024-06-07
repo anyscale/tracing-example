@@ -1,6 +1,5 @@
 from fastapi import FastAPI
 from ray import serve
-import os
 from fp import FastAPIInstrumentor
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
@@ -34,5 +33,4 @@ class HelloWorld:
             # Return message
             return "Hello world!"
 
-entrypoint = HelloWorld.bind()
-
+app = HelloWorld.bind()
