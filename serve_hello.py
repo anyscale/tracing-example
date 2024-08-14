@@ -1,14 +1,17 @@
 from fastapi import FastAPI
-from ray import serve
-from fp import FastAPIInstrumentor
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
+from ray import serve
 from ray.anyscale.serve._private.tracing_utils import (
     get_trace_context,
 )
 
+from fp import FastAPIInstrumentor
+
 app = FastAPI()
 FastAPIInstrumentor().instrument_app(app)
+
+
 @serve.deployment
 @serve.ingress(app)
 class HelloWorld:
@@ -32,5 +35,6 @@ class HelloWorld:
 
             # Return message
             return "Hello world!"
+
 
 app = HelloWorld.bind()
