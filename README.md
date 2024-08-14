@@ -10,25 +10,34 @@ Note that by default, each request handled by the Serve application exports a tr
 ## Quick start
 Set the `tracing_config` in the service config.
 
-```yaml title=service.yaml
+```yaml title=default_tracing_service.yaml
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example
+working_dir: https://github.com/anyscale/tracing-example/archive/6601ecdd76dcc4b1b93b81d93db61d1d969d91bb.zip
+image_uri: anyscale/ray:2.34.0-slim-py310
+requirements:
+  - opentelemetry-api==1.26.0
+  - opentelemetry-sdk==1.26.0
+  - opentelemetry-exporter-otlp==1.26.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
+  - opentelemetry-instrumentation==0.47b0
+  - opentelemetry-instrumentation-asgi==0.47b0
+  - opentelemetry-instrumentation-fastapi==0.47b0
 applications:
-- name: my_app
-    route_prefix:  '/'
+  - route_prefix:  '/'
     import_path: default_serve_hello:app
-    runtime_env: { }
+    runtime_env: {}
 tracing_config:
   enabled: True
   sampling_ratio: 1.0
+
 ```
 
 Deploy the service using the following command.
 ```bash
-anyscale service deploy -f service.yaml
+anyscale service deploy -f default_tracing_service.yaml
 ```
 
-After querying your application, traces will be exported to the `logs/serve/spans/` folder on instances with active replicas.
+After querying your application, traces will be exported to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
 
 ```python
 {
@@ -76,19 +85,23 @@ We import `FastAPIInstrumentor` from [here](https://github.com/anyscale/tracing-
 :::
 ```python title=serve_hello.py
 from fastapi import FastAPI
-from ray import serve
-from fp import FastAPIInstrumentor
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
+from ray import serve
 from typing import Optional, Dict
+
+from fp import FastAPIInstrumentor
+
 
 def get_serve_trace_context() -> Optional[Dict[str, str]]:
     """
     Retrieve the tracing context for the Ray Serve application if running within Anyscale.
-    This function attempts to import and call the `get_trace_context` function from the 
-    `ray.anyscale.serve.utils` module, which is only available when the application is 
-    deployed within Anyscale. If the import fails (i.e., the application is not running 
+
+    This function attempts to import and call the `get_trace_context` function from the
+    `ray.anyscale.serve.utils` module, which is only available when you deploy the app
+    within Anyscale. If the import fails (i.e., the app is not running
     within Anyscale), the function returns an empty dictionary.
+
     Returns:
         dict: The trace context if running within Anyscale; otherwise, an empty dictionary.
     """
@@ -96,10 +109,13 @@ def get_serve_trace_context() -> Optional[Dict[str, str]]:
         from ray.anyscale.serve.utils import get_trace_context
         return get_trace_context()
     except ImportError:
-        return {} # Not running in Anyscale.
+        return {}  # Not running in Anyscale.
+
 
 app = FastAPI()
 FastAPIInstrumentor().instrument_app(app)
+
+
 @serve.deployment
 @serve.ingress(app)
 class HelloWorld:
@@ -108,7 +124,7 @@ class HelloWorld:
         # Create a new span that is associated with the current trace
         tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span(
-            "application_span", context=get_serve_trace_context()
+                "application_span", context=get_serve_trace_context()
         ) as span:
             replica_context = serve.get_replica_context()
             # Update the span attributes and status
@@ -124,29 +140,40 @@ class HelloWorld:
             # Return message
             return "Hello world!"
 
+
 app = HelloWorld.bind()
 ```
 
 Next, define the service configuration with a service YAML.
-```yaml title=service.yaml
+```yaml title=tracing_service.yaml
 name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example
+working_dir: https://github.com/anyscale/tracing-example/archive/6601ecdd76dcc4b1b93b81d93db61d1d969d91bb.zip
+image_uri: anyscale/ray:2.34.0-slim-py310
+requirements:
+  - opentelemetry-api==1.26.0
+  - opentelemetry-sdk==1.26.0
+  - opentelemetry-exporter-otlp==1.26.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
+  - opentelemetry-instrumentation==0.47b0
+  - opentelemetry-instrumentation-asgi==0.47b0
+  - opentelemetry-instrumentation-fastapi==0.47b0
 applications:
-- name: my_app
+  - name: my_app
     route_prefix:  '/'
     import_path: serve_hello:app
-    runtime_env: { }
+    runtime_env: {}
 tracing_config:
   enabled: True
   sampling_ratio: 1.0
+
 ```
 
 To deploy the service, we can run the following command.
 ```bash
-anyscale service deploy -f service.yaml
+anyscale service deploy -f tracing_service.yaml
 ```
 
-After querying your application, traces will be exported to the `logs/serve/spans/` folder on instances with active replicas.
+After querying your application, traces will be exported to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
 
 ```python
 {
@@ -218,46 +245,54 @@ This tutorial provides guidance on how to export the OpenTelemetry traces to a t
 ### Build an image containing an OpenTelemetry compatible exporter
 To export traces to a tracing backend, we need to define a tracing exporter function in `exporter.py`. The tracing exporter needs to be a Python function that takes no arguments and returns a list of type `SpanProcessor`. Note, you can configure this function to return several span processors so traces are exported to multiple backends.
 ```python title=exporter.py
-import os 
+import os
 
-from opentelemetry.sdk.trace.export import SpanProcessor, BatchSpanProcessor
 from opentelemetry.ext.honeycomb import HoneycombSpanExporter
-
+from opentelemetry.sdk.trace import SpanProcessor
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from typing import List
+
+# Replace those with the actual values.
+HONEYCOMB_SERVICE_NAME = os.getenv("HONEYCOMB_SERVICE_NAME", "")
+HONEYCOMB_WRITE_KEY = os.getenv("HONEYCOMB_WRITE_KEY", "")
+HONEYCOMB_DATASET_NAME = os.getenv("HONEYCOMB_DATASET_NAME", "")
+
 
 def default_tracing_exporter() -> List[SpanProcessor]:
     exporter = HoneycombSpanExporter(
-        service_name="",
-        writekey="",
-        dataset="",
+        service_name=HONEYCOMB_SERVICE_NAME,
+        writekey=HONEYCOMB_WRITE_KEY,
+        dataset=HONEYCOMB_DATASET_NAME,
     )
-
     return [BatchSpanProcessor(exporter)]
+
+
 ```
 
 
 Then define a Dockerfile and environment dependencies.
 ```
 # requirements.txt
-opentelemetry-sdk==1.25.0
+asgiref==3.8.1
+deprecated==1.2.14
+importlib-metadata==8.2.0
+libhoney==2.4.0
 opentelemetry-api==1.25.0
-opentelemetry-instrumentation==0.46b0
-opentelemetry.instrumentation.fastapi==0.45b0
 opentelemetry-ext-honeycomb==1.3.0
-asgiref
-deprecated
-importlib-metadata
-zipp
-opentelemetry.instrumentation.asgi==0.46b0
-opentelemetry-util-http==0.46b0
+opentelemetry-instrumentation==0.46b0
+opentelemetry-instrumentation-asgi==0.46b0
+opentelemetry-instrumentation-fastapi==0.45b0
+opentelemetry-sdk==1.25.0
 opentelemetry-semantic-conventions==0.46b0
-libhoney
-statsd
+opentelemetry-util-http==0.46b0
+statsd==4.0.1
+zipp==3.20.0
+
 ```
 
 ```Dockerfile title=Dockerfile
 # Use Anyscale base image
-FROM anyscale/ray:2.24.0-slim-py310
+FROM anyscale/ray:2.34.0-slim-py310
 
 # Copy the requirements file into the Docker image
 COPY requirements.txt .
@@ -272,6 +307,7 @@ COPY fp.py /home/ray/fp.py
 
 # Add working directory into python path so they are importable
 ENV PYTHONPATH=/home/ray
+
 ```
 
 After defining the Dockerfile, build and push the Docker image with the following commands.
@@ -284,24 +320,24 @@ docker push my-registry/my-image:tag
 ```
 
 Next, define the service configuration with a service YAML and `image_uri` that points to the image. Also, define the module in `exporter_import_path` to load the span exporters when tracing is setup
-```yaml title=service.yaml
-name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example
+```yaml title=tracing_service_with_exporter.yaml
+name: tracing-service-with-exporter
 image_uri: <IMAGE_URI>
 applications:
 - name: my_app
-    route_prefix:  '/'
-    import_path: serve_hello:app
-    runtime_env: { }
+  route_prefix:  '/'
+  import_path: serve_hello:app
+  runtime_env: {}
 tracing_config:
   exporter_import_path: exporter:default_tracing_exporter
   enabled: True
   sampling_ratio: 1.0
+
 ```
 
 To deploy the service, we can run the following command.
 ```bash
-anyscale service deploy -f service.yaml
+anyscale service deploy -f tracing_service_with_exporter.yaml
 ```
 
 After querying your application, traces will be exported to the backend defined in `exporter.py`.
