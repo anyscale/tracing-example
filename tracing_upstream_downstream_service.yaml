@@ -1,0 +1,15 @@
+name: tracing-upsteam-downstream-service
+image_uri: <IMAGE_URI>
+applications:
+- name: app
+  route_prefix: /
+  import_path: serve_call_external_service:upstream_app
+  runtime_env: {}
+- name: app2
+  route_prefix: /downstream
+  import_path: serve_call_external_service:downstream_app
+  runtime_env: {}
+tracing_config:
+  exporter_import_path: exporter:default_tracing_exporter
+  enabled: True
+  sampling_ratio: 1.0
