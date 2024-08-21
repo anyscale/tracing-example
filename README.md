@@ -341,3 +341,128 @@ anyscale service deploy -f tracing_service_with_exporter.yaml
 ```
 
 After querying your application, traces will be exported to the backend defined in `exporter.py`.
+
+
+## Propagate traces between services
+
+To properly propagate traces between upstream and downstream services, you need to
+ensure that `traceparent` is passed in the headers of the request.
+`TraceContextTextMapPropagator().inject()` serializes the trace context and add
+the proper `traceparent` to the header object. The following code snippet
+demonstrates how to propagate traces between two services.
+
+```python
+import asyncio
+import requests
+from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import (
+    TraceContextTextMapPropagator,
+)
+from opentelemetry.trace.status import Status, StatusCode
+from ray import serve
+from ray.anyscale.serve._private.tracing_utils import (
+    get_trace_context,
+)
+from starlette.requests import Request
+
+
+@serve.deployment
+class UpstreamApp:
+    def __call__(self, request: Request):
+        # Create a new span associated with the current trace.
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+                "upstream_application_span", context=get_trace_context()
+        ) as span:
+            url = f"{str(request.url).replace('http://', 'https://')}downstream"
+            headers = {"Authorization": request.headers.get("authorization")}
+
+            # Inject the trace context into the headers to propagate it downstream.
+            ctx = get_trace_context()
+            TraceContextTextMapPropagator().inject(headers, ctx)
+
+            # Go out to network to call the downstream service.
+            resp = requests.get(url, headers=headers)
+
+            replica_context = serve.get_replica_context()
+            # Update the span attributes and status.
+            attributes = {
+                "deployment": replica_context.deployment,
+                "replica_id": replica_context.replica_id.unique_id
+            }
+            span.set_attributes(attributes)
+            span.set_status(
+                Status(status_code=StatusCode.OK)
+            )
+
+            # Return message.
+            return {
+                "upstream_message": "Hello world from UpstreamApp!",
+                "downstream_message": resp.text,
+            }
+
+
+@serve.deployment
+class DownstreamApp:
+    async def __call__(self):
+        # Create a new span associated with the current trace.
+        tracer = trace.get_tracer(__name__)
+        with tracer.start_as_current_span(
+                "downstream_application_span", context=get_trace_context()
+        ) as span:
+            replica_context = serve.get_replica_context()
+            # Update the span attributes and status.
+            attributes = {
+                "deployment": replica_context.deployment,
+                "replica_id": replica_context.replica_id.unique_id
+            }
+            span.set_attributes(attributes)
+            span.set_status(
+                Status(status_code=StatusCode.OK)
+            )
+
+            # Simulate some work.
+            await asyncio.sleep(0.5)
+
+            # Return message.
+            return "Hello world from DownstreamApp!"
+
+
+upstream_app = UpstreamApp.bind()
+downstream_app = DownstreamApp.bind()
+
+```
+
+Define the service configuration with a service YAML like below. This service
+creates two endpoints, one for the upstream service and one for the downstream service.
+The traces continue to export to the backend defined in `exporter.py` from the
+previous section.
+
+```yaml title=tracing_upstream_downstream_service.yaml
+name: tracing-upsteam-downstream-service
+image_uri: <IMAGE_URI>
+applications:
+  - name: app
+    route_prefix: /
+    import_path: serve_call_external_service:upstream_app
+    runtime_env: {}
+  - name: app2
+    route_prefix: /downstream
+    import_path: serve_call_external_service:downstream_app
+    runtime_env: {}
+tracing_config:
+  exporter_import_path: exporter:default_tracing_exporter
+  enabled: True
+  sampling_ratio: 1.0
+
+
+```
+
+To deploy the service, run the following command:
+
+```bash
+anyscale service deploy -f tracing_upstream_downstream_service.yaml
+```
+
+After querying your application, Anyscale exports traces to Honeycomb. The spans are
+linked properly between the upstream and downstream services.
