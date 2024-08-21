@@ -347,7 +347,7 @@ After querying your application, traces will be exported to the backend defined 
 
 To properly propagate traces between upstream and downstream services, you need to
 ensure that `traceparent` is passed in the headers of the request.
-`TraceContextTextMapPropagator().inject()` will serialize the trace context and add
+`TraceContextTextMapPropagator().inject()` serializes the trace context and add
 the proper `traceparent` to the header object. The following code snippet
 demonstrates how to propagate traces between two services.
 
@@ -369,7 +369,7 @@ from starlette.requests import Request
 @serve.deployment
 class UpstreamApp:
     def __call__(self, request: Request):
-        # Create a new span that is associated with the current trace
+        # Create a new span associated with the current trace.
         tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span(
                 "upstream_application_span", context=get_trace_context()
@@ -385,7 +385,7 @@ class UpstreamApp:
             resp = requests.get(url, headers=headers)
 
             replica_context = serve.get_replica_context()
-            # Update the span attributes and status
+            # Update the span attributes and status.
             attributes = {
                 "deployment": replica_context.deployment,
                 "replica_id": replica_context.replica_id.unique_id
@@ -395,7 +395,7 @@ class UpstreamApp:
                 Status(status_code=StatusCode.OK)
             )
 
-            # Return message
+            # Return message.
             return {
                 "upstream_message": "Hello world from UpstreamApp!",
                 "downstream_message": resp.text,
@@ -405,13 +405,13 @@ class UpstreamApp:
 @serve.deployment
 class DownstreamApp:
     async def __call__(self):
-        # Create a new span that is associated with the current trace
+        # Create a new span associated with the current trace.
         tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span(
                 "downstream_application_span", context=get_trace_context()
         ) as span:
             replica_context = serve.get_replica_context()
-            # Update the span attributes and status
+            # Update the span attributes and status.
             attributes = {
                 "deployment": replica_context.deployment,
                 "replica_id": replica_context.replica_id.unique_id
@@ -424,7 +424,7 @@ class DownstreamApp:
             # Simulate some work.
             await asyncio.sleep(0.5)
 
-            # Return message
+            # Return message.
             return "Hello world from DownstreamApp!"
 
 
@@ -433,9 +433,9 @@ downstream_app = DownstreamApp.bind()
 
 ```
 
-Define the service configuration with a service YAML like below. This service will
+Define the service configuration with a service YAML like below. This service
 creates two endpoints, one for the upstream service and one for the downstream service.
-The traces will continue to export to the backend defined in `exporter.py` from the
+The traces continue to export to the backend defined in `exporter.py` from the
 previous section.
 
 ```yaml title=tracing_upstream_downstream_service.yaml
@@ -458,11 +458,11 @@ tracing_config:
 
 ```
 
-To deploy the service, we can run the following command.
+To deploy the service, run the following command:
 
 ```bash
 anyscale service deploy -f tracing_upstream_downstream_service.yaml
 ```
 
-After querying your application, traces will be exported to Honeycomb. The spans will
-be linked properly between the upstream and downstream services.
+After querying your application, Anyscale exports traces to Honeycomb. The spans are
+linked properly between the upstream and downstream services.
