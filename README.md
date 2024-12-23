@@ -13,7 +13,7 @@ Set the `tracing_config` in the service config.
 ```yaml title=default_tracing_service.yaml
 name: default-tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/6601ecdd76dcc4b1b93b81d93db61d1d969d91bb.zip
-image_uri: anyscale/ray:2.34.0-slim-py310
+image_uri: anyscale/ray:2.40.0-slim-py310
 requirements:
   - opentelemetry-api==1.26.0
   - opentelemetry-sdk==1.26.0

@@ -6,15 +6,18 @@ from ray.anyscale.serve._private.tracing_utils import (
     get_trace_context,
 )
 
-from fp import FastAPIInstrumentor
-
 app = FastAPI()
-FastAPIInstrumentor().instrument_app(app)
 
 
 @serve.deployment
 @serve.ingress(app)
 class HelloWorld:
+    def __init__(self):
+        # Lazy import `FastAPIInstrumentor`.
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+        FastAPIInstrumentor().instrument_app(app)
+
     @app.get("/")
     def hello(self):
         # Create a new span that is associated with the current trace
