@@ -13,7 +13,7 @@ Set the `tracing_config` in the service config.
 ```yaml title=default_tracing_service.yaml
 # default_tracing_service.yaml
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/06a4d58bd49800b8309f636882add2060e79ef2c.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
 image_uri: anyscale/ray:2.40.0-slim-py310
 requirements:
   - opentelemetry-api==1.26.0
@@ -84,6 +84,10 @@ This tutorial provides guidance on how to instrument a Serve app with custom tra
 
 The first step is augmenting the Serve application with OpenTelemetry traces and the FastAPIInstrumentor.
 
+:::note
+We import `FastAPIInstrumentor` from [here](https://github.com/anyscale/tracing-example/blob/main/fp.py) to bypass an incompatibility issue with Ray Serve.
+:::
+
 ```python title=serve_hello.py
 # serve_hello.py
 from fastapi import FastAPI
@@ -93,7 +97,7 @@ from ray import serve
 from ray.anyscale.serve._private.tracing_utils import get_trace_context
 
 app = FastAPI()
-
+FastAPIInstrumentor().instrument_app(app)
 
 @serve.deployment
 @serve.ingress(app)
@@ -129,7 +133,7 @@ Next, define the service configuration with a service YAML.
 ```yaml title=tracing_service.yaml
 # tracing_service.yaml
 name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/06a4d58bd49800b8309f636882add2060e79ef2c.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
 image_uri: anyscale/ray:2.40.0-slim-py310
 requirements:
   - opentelemetry-api==1.26.0
