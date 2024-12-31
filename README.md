@@ -84,6 +84,10 @@ This tutorial provides guidance on how to instrument a Serve app with custom tra
 
 The first step is augmenting the Serve application with OpenTelemetry traces and the FastAPIInstrumentor.
 
+:::note
+We import `FastAPIInstrumentor` from [here](https://github.com/anyscale/tracing-example/blob/main/fp.py) to bypass an incompatibility issue with Ray Serve.
+:::
+
 ```python title=serve_hello.py
 # serve_hello.py
 from fastapi import FastAPI
@@ -93,7 +97,7 @@ from ray import serve
 from ray.anyscale.serve._private.tracing_utils import get_trace_context
 
 app = FastAPI()
-
+FastAPIInstrumentor().instrument_app(app)
 
 @serve.deployment
 @serve.ingress(app)
