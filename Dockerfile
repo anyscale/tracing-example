@@ -13,5 +13,10 @@ COPY serve_hello.py /home/ray/serve_hello.py
 COPY serve_call_external_service.py /home/ray/serve_call_external_service.py
 COPY fp.py /home/ray/fp.py
 
+# Set environment variables for Honeycomb exporter
+ENV HONEYCOMB_SERVICE_NAME="my-service-name"
+ENV HONEYCOMB_WRITE_KEY="xxxxxxxxxxxxxxxxxxxxxx"
+ENV HONEYCOMB_DATASET_NAME="my-dataset-name"
+
 # Add working directory into python path so they are importable
 ENV PYTHONPATH=/home/ray
