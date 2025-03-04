@@ -15,7 +15,7 @@ def _add_ray_serve_context(span: Span) -> None:
     span.set_attribute("ray.task_id", ray_context.get_task_id())
 
     # add request id
-    serve_request_context = ray.serve.context._serve_request_context.get()
+    serve_request_context = ray.serve.context._get_serve_request_context()
     span.set_attribute("ray.request_id", serve_request_context.request_id)
 
 
