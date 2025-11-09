@@ -3,6 +3,10 @@
 This guide provides three tutorials on how to add OpenTelemetry tracing for a Ray Serve applications in an
 Anyscale Service. The first tutorial provides a quick start on how to collect Ray Serve traces and view them in the Ray logs. The second tutorial provides a more in-depth example on how to instrument your application. The third details how to export traces to a tracing backend.
 
+:::note
+Ray >=2.47 is the minimum version required to use distributed tracing with FastAPI and the FastAPIInstrumentor.
+:::
+
 Note that by default, each request handled by the Serve application exports a trace that provides observability of the full span of the request.
 
 ## Getting started
@@ -14,7 +18,7 @@ Set the `tracing_config` in the service config.
 # default_tracing_service.yaml
 name: default-tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
-image_uri: anyscale/ray:2.40.0-slim-py310
+image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0
   - opentelemetry-sdk==1.26.0
@@ -134,7 +138,7 @@ Next, define the service configuration with a service YAML.
 # tracing_service.yaml
 name: tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
-image_uri: anyscale/ray:2.40.0-slim-py310
+image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0
   - opentelemetry-sdk==1.26.0
@@ -280,7 +284,7 @@ zipp==3.20.0
 
 ```Dockerfile title=Dockerfile
 # Use Anyscale base image
-FROM anyscale/ray:2.40.0-slim-py310
+FROM anyscale/ray:2.51.0-slim-py311
 
 # Copy the requirements file into the Docker image
 COPY requirements.txt .
@@ -472,7 +476,7 @@ function. In order to start developing tracing on Workspaces, you need to define
 environment variable in after the Workspace is started.
 
 Start a workspace with the image of your choice (i.e.
-`anyscale/ray:2.40.0-slim-py312-cu123`). Then, go to the "Dependencies" tab and add
+`anyscale/ray:2.51.0-slim-py311`). Then, go to the "Dependencies" tab and add
 `ANYSCALE_TRACING_EXPORTER_IMPORT_PATH=exporter_dev:debug_span_processor` to the
 Environment Variables section. You would need to terminate and restart the workspace to
 have this environment variable take effect.

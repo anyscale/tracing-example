@@ -1,5 +1,5 @@
 # Use Anyscale base image
-FROM anyscale/ray:2.40.0-slim-py310
+FROM anyscale/ray:2.51.0-slim-py311
 
 # Copy the requirements file into the Docker image
 COPY requirements.txt .
