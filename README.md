@@ -236,29 +236,18 @@ This tutorial provides guidance on how to export the OpenTelemetry traces to a t
 
 ### Build an image containing an OpenTelemetry compatible exporter
 
-To export traces to a tracing backend, we need to define a tracing exporter function in `exporter.py`. The tracing exporter needs to be a Python function that takes no arguments and returns a list of type `SpanProcessor`. Note, you can configure this function to return several span processors so traces are exported to multiple backends.
+To export traces to a tracing backend, we need to define a tracing exporter function in `exporter_hc.py`. The tracing exporter needs to be a Python function that takes no arguments and returns a list of type `SpanProcessor`. Note, you can configure this function to return several span processors so traces are exported to multiple backends.
 
-```python title=exporter.py
-import os
-
-from opentelemetry.ext.honeycomb import HoneycombSpanExporter
-from opentelemetry.sdk.trace import SpanProcessor
+```python title=exporter_hc.py
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from typing import List
-
-# Replace those with the actual values.
-HONEYCOMB_SERVICE_NAME = os.getenv("HONEYCOMB_SERVICE_NAME", "")
-HONEYCOMB_WRITE_KEY = os.getenv("HONEYCOMB_WRITE_KEY", "")
-HONEYCOMB_DATASET_NAME = os.getenv("HONEYCOMB_DATASET_NAME", "")
+from opentelemetry.sdk.trace import SpanProcessor
 
 
-def default_tracing_exporter() -> List[SpanProcessor]:
-    exporter = HoneycombSpanExporter(
-        service_name=HONEYCOMB_SERVICE_NAME,
-        writekey=HONEYCOMB_WRITE_KEY,
-        dataset=HONEYCOMB_DATASET_NAME,
-    )
-    return [BatchSpanProcessor(exporter)]
+def honeycomb_span_processors() -> List[SpanProcessor]:
+    # Reads OTEL_* env vars; no arguments needed
+    return [BatchSpanProcessor(OTLPSpanExporter())]
 
 ```
 
@@ -269,15 +258,14 @@ Then define a Dockerfile and environment dependencies.
 asgiref==3.8.1
 deprecated==1.2.14
 importlib-metadata==8.2.0
-libhoney==2.4.0
-opentelemetry-api==1.25.0
-opentelemetry-ext-honeycomb==1.3.0
-opentelemetry-instrumentation==0.46b0
-opentelemetry-instrumentation-asgi==0.46b0
-opentelemetry-instrumentation-fastapi==0.45b0
-opentelemetry-sdk==1.25.0
-opentelemetry-semantic-conventions==0.46b0
-opentelemetry-util-http==0.46b0
+opentelemetry-api==1.26.0
+opentelemetry-exporter-otlp-proto-http==1.26.0
+opentelemetry-instrumentation==0.47b0
+opentelemetry-instrumentation-asgi==0.47b0
+opentelemetry-instrumentation-fastapi==0.47b0
+opentelemetry-sdk==1.26.0
+opentelemetry-semantic-conventions==0.47b0
+opentelemetry-util-http==0.47b0
 statsd==4.0.1
 zipp==3.20.0
 
@@ -294,13 +282,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
 
 # Copy exporter file and application definitions into the Docker image
-COPY exporter.py /home/ray/exporter.py
+COPY exporter_hc.py /home/ray/exporter_hc.py
 COPY serve_hello.py /home/ray/serve_hello.py
 
-# Set environment variables for Honeycomb
-ENV HONEYCOMB_SERVICE_NAME="my-service-name"
-ENV HONEYCOMB_WRITE_KEY="xxxxxxxxxxxxxxxxxxxxxx"
-ENV HONEYCOMB_DATASET_NAME="my-dataset-name"
+# Set environment variables for OTLP exporter
+ENV OTEL_EXPORTER_OTLP_ENDPOINT="https://api.honeycomb.io"
+ENV OTEL_EXPORTER_OTLP_HEADERS="x-honeycomb-team=your-api-key"
+ENV OTEL_SERVICE_NAME="my-service-name"
 
 # Add working directory into python path so they are importable
 ENV PYTHONPATH=/home/ray
@@ -330,7 +318,7 @@ applications:
     import_path: serve_hello:app
     runtime_env: {}
 tracing_config:
-  exporter_import_path: exporter:default_tracing_exporter
+  exporter_import_path: exporter_hc:honeycomb_span_processors
   enabled: True
   sampling_ratio: 1.0
 
@@ -342,7 +330,7 @@ To deploy the service, we can run the following command.
 anyscale service deploy -f tracing_service_with_exporter.yaml
 ```
 
-After querying your application, Anyscale exports traces to the backend defined in `exporter.py`.
+After querying your application, Anyscale exports traces to the backend defined in `exporter_hc.py`.
 
 ## Propagate traces between services
 
@@ -437,7 +425,7 @@ downstream_app = DownstreamApp.bind()
 
 Define the service configuration with a service YAML like below. This service
 creates two endpoints, one for the upstream service and one for the downstream service.
-The traces continue to export to the backend defined in `exporter.py` from the
+The traces continue to export to the backend defined in `exporter_hc.py` from the
 previous section.
 
 ```yaml title=tracing_upstream_downstream_service.yaml
@@ -454,7 +442,7 @@ applications:
     import_path: serve_call_external_service:downstream_app
     runtime_env: {}
 tracing_config:
-  exporter_import_path: exporter:default_tracing_exporter
+  exporter_import_path: exporter_hc:honeycomb_span_processors
   enabled: True
   sampling_ratio: 1.0
 

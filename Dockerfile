@@ -8,14 +8,14 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
 
 # Copy exporter file and application definitions into the Docker image
-COPY exporter.py /home/ray/exporter.py
+COPY exporter_hc.py /home/ray/exporter_hc.py
 COPY serve_hello.py /home/ray/serve_hello.py
 COPY serve_call_external_service.py /home/ray/serve_call_external_service.py
 
-# Set environment variables for Honeycomb exporter
-ENV HONEYCOMB_SERVICE_NAME="my-service-name"
-ENV HONEYCOMB_WRITE_KEY="xxxxxxxxxxxxxxxxxxxxxx"
-ENV HONEYCOMB_DATASET_NAME="my-dataset-name"
+# Set environment variables for OTLP exporter
+ENV OTEL_EXPORTER_OTLP_ENDPOINT="https://api.honeycomb.io"
+ENV OTEL_EXPORTER_OTLP_HEADERS="x-honeycomb-team=your-api-key"
+ENV OTEL_SERVICE_NAME="my-service-name"
 
 # Add working directory into python path so they are importable
 ENV PYTHONPATH=/home/ray

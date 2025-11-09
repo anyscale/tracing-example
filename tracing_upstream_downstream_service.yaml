@@ -10,6 +10,6 @@ applications:
   import_path: serve_call_external_service:downstream_app
   runtime_env: {}
 tracing_config:
-  exporter_import_path: exporter:default_tracing_exporter
+  exporter_import_path: exporter_hc:honeycomb_span_processors
   enabled: True
   sampling_ratio: 1.0
