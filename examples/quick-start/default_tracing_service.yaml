@@ -1,5 +1,5 @@
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/quick-start
+working_dir: .
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0

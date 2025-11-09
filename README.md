@@ -45,28 +45,38 @@ anyscale service deploy -f examples/quick-start/default_tracing_service.yaml
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
 
-```python
+```bash
+cat /tmp/ray/session_latest/logs/serve/spans/proxy*.json
+```
+
+```json
 {
-    "name": "proxy_http_request",
+    "name": "route_to_replica HelloWorld __call__",
     "context": {
-        "trace_id": "0x88aef1ad547167b44a15479f57a6383e",
-        "span_id": "0x59989b70393625e3",
+        "trace_id": "0xf829758dcca0cea68128174d71d4f5f2",
+        "span_id": "0x1f2154f825a3b21c",
         "trace_state": "[]"
     },
     "kind": "SpanKind.SERVER",
-    "parent_id": null,
-    "start_time": "2024-05-28T18:05:04.864137Z",
-    "end_time": "2024-05-28T18:05:04.891003Z",
+    "parent_id": "0x771cf15c3798baf1",
+    "start_time": "2025-11-10T00:53:16.648448Z",
+    "end_time": "2025-11-10T00:53:16.654364Z",
     "status": {
-        "status_code": "OK"
+        "status_code": "UNSET"
     },
     "attributes": {
-        "request_id": "cf86e040-2c53-44b8-976e-55224b692141",
+        "request_id": "59ea3006-b53e-4460-882a-f576d43b9055",
         "deployment": "HelloWorld",
         "app": "default",
-        "request_type": "http",
-        "request_method": "GET",
-        "request_route_path": "/"
+        "call_method": "__call__",
+        "route": "/",
+        "multiplexed_model_id": "",
+        "is_streaming": true,
+        "is_http_request": true,
+        "is_grpc_request": false,
+        "resource.name": "route_to_replica HelloWorld __call__",
+        "http.method": "__call__",
+        "http.route": "/"
     },
     "events": [],
     "links": [],
@@ -74,7 +84,45 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
         "attributes": {
             "telemetry.sdk.language": "python",
             "telemetry.sdk.name": "opentelemetry",
-            "telemetry.sdk.version": "1.24.0",
+            "telemetry.sdk.version": "1.34.1",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "proxy_http_request HelloWorld GET /",
+    "context": {
+        "trace_id": "0xf829758dcca0cea68128174d71d4f5f2",
+        "span_id": "0x771cf15c3798baf1",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": null,
+    "start_time": "2025-11-10T00:53:16.647830Z",
+    "end_time": "2025-11-10T00:53:16.657576Z",
+    "status": {
+        "status_code": "OK"
+    },
+    "attributes": {
+        "request_id": "59ea3006-b53e-4460-882a-f576d43b9055",
+        "deployment": "HelloWorld",
+        "app": "default",
+        "request_type": "http",
+        "request_method": "GET",
+        "request_route_path": "/",
+        "resource.name": "proxy_http_request HelloWorld GET /",
+        "http.method": "GET",
+        "http.status_code": 200,
+        "http.route": "/"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.34.1",
             "service.name": "unknown_service"
         },
         "schema_url": ""
@@ -167,24 +215,28 @@ anyscale service deploy -f examples/instrumented/tracing_service.yaml
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
 
-```python
+```bash
+cat /tmp/ray/session_latest/logs/serve/spans/replica*.json
+```
+
+```json
 {
     "name": "application_span",
     "context": {
-        "trace_id": "0xff1e005576c03988af36a72bb53af9b0",
-        "span_id": "0xadf6ad79766eb568",
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0xfe0bd8218823708f",
         "trace_state": "[]"
     },
     "kind": "SpanKind.INTERNAL",
-    "parent_id": "0xdf94f8c2dbf8f6ff",
-    "start_time": "2024-06-04T20:52:12.558024Z",
-    "end_time": "2024-06-04T20:52:12.558047Z",
+    "parent_id": "0x5f91ee3b05879412",
+    "start_time": "2025-11-10T01:00:09.994951Z",
+    "end_time": "2025-11-10T01:00:09.994983Z",
     "status": {
         "status_code": "OK"
     },
     "attributes": {
         "deployment": "HelloWorld",
-        "replica_id": "7u8nq1c3"
+        "replica_id": "rba21irc"
     },
     "events": [],
     "links": [],
@@ -192,7 +244,7 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
         "attributes": {
             "telemetry.sdk.language": "python",
             "telemetry.sdk.name": "opentelemetry",
-            "telemetry.sdk.version": "1.24.0",
+            "telemetry.sdk.version": "1.38.0",
             "service.name": "unknown_service"
         },
         "schema_url": ""
@@ -201,20 +253,20 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
 {
     "name": "GET / http send",
     "context": {
-        "trace_id": "0xd02e60adebf4010d29f7057b373224f9",
-        "span_id": "0x13dec7bea39c7d48",
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0x39bf09e57e96de6d",
         "trace_state": "[]"
     },
     "kind": "SpanKind.INTERNAL",
-    "parent_id": "0x288b70e107316859",
-    "start_time": "2024-06-04T20:52:12.558452Z",
-    "end_time": "2024-06-04T20:52:12.558489Z",
+    "parent_id": "0x5f91ee3b05879412",
+    "start_time": "2025-11-10T01:00:09.995322Z",
+    "end_time": "2025-11-10T01:00:09.995355Z",
     "status": {
         "status_code": "UNSET"
     },
     "attributes": {
-        "http.status_code": 200,
-        "type": "http.response.start"
+        "asgi.event.type": "http.response.start",
+        "http.status_code": 200
     },
     "events": [],
     "links": [],
@@ -222,7 +274,116 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
         "attributes": {
             "telemetry.sdk.language": "python",
             "telemetry.sdk.name": "opentelemetry",
-            "telemetry.sdk.version": "1.24.0",
+            "telemetry.sdk.version": "1.38.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "GET / http send",
+    "context": {
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0x6797ff778d734b7f",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x5f91ee3b05879412",
+    "start_time": "2025-11-10T01:00:09.995595Z",
+    "end_time": "2025-11-10T01:00:09.995611Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "asgi.event.type": "http.response.body"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.38.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "GET /",
+    "context": {
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0x5f91ee3b05879412",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0xea8f9f83ab30915e",
+    "start_time": "2025-11-10T01:00:09.994684Z",
+    "end_time": "2025-11-10T01:00:09.995897Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "http.scheme": "https",
+        "http.host": "10.0.17.185:8000",
+        "net.host.port": 8000,
+        "http.flavor": "1.1",
+        "http.target": "/",
+        "http.url": "https://fastapi-instrumented-tracing-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com/",
+        "http.method": "GET",
+        "http.server_name": "fastapi-instrumented-tracing-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com",
+        "http.user_agent": "curl/8.7.1",
+        "net.peer.ip": "157.131.214.156",
+        "http.route": "/",
+        "http.status_code": 200
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.38.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "replica_handle_request HelloWorld __call__",
+    "context": {
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0xea8f9f83ab30915e",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": "0x6dbfcda15dbadb71",
+    "start_time": "2025-11-10T01:00:09.993521Z",
+    "end_time": "2025-11-10T01:00:09.997203Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "resource.name": "replica_handle_request HelloWorld __call__",
+        "request_id": "379879bb-da36-46d8-8665-d29ab2f0e4c1",
+        "replica_id": "rba21irc",
+        "deployment": "HelloWorld",
+        "app": "my_app",
+        "call_method": "__call__",
+        "route": "/",
+        "multiplexed_model_id": "",
+        "is_streaming": true,
+        "http.method": "GET",
+        "http.status_code": "200",
+        "http.route": "/"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.38.0",
             "service.name": "unknown_service"
         },
         "schema_url": ""
