@@ -1,13 +1,19 @@
 from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from ray import serve
 from ray.anyscale.serve._private.tracing_utils import get_trace_context
 
-from fp import FastAPIInstrumentor
 
-app = FastAPI()
-FastAPIInstrumentor().instrument_app(app)
+def build_fastapi_app():
+    app = FastAPI()
+    FastAPIInstrumentor().instrument_app(app)
+    return app
+
+
+app = build_fastapi_app()
+
 
 @serve.deployment
 @serve.ingress(app)
@@ -23,12 +29,10 @@ class HelloWorld:
             # Update the span attributes and status
             attributes = {
                 "deployment": replica_context.deployment,
-                "replica_id": replica_context.replica_id.unique_id
+                "replica_id": replica_context.replica_id.unique_id,
             }
             span.set_attributes(attributes)
-            span.set_status(
-                Status(status_code=StatusCode.OK)
-            )
+            span.set_status(Status(status_code=StatusCode.OK))
 
             # Return message
             return "Hello world!"
