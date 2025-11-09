@@ -14,10 +14,10 @@ Note that by default, each request handled by the Serve application exports a tr
 ## Quick start
 Set the `tracing_config` in the service config.
 
-```yaml title=default_tracing_service.yaml
-# default_tracing_service.yaml
+```yaml title=examples/quick-start/default_tracing_service.yaml
+# examples/quick-start/default_tracing_service.yaml
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/main.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/quick-start
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0
@@ -40,7 +40,7 @@ tracing_config:
 Deploy the service using the following command.
 
 ```bash
-anyscale service deploy -f default_tracing_service.yaml
+anyscale service deploy -f examples/quick-start/default_tracing_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
@@ -88,8 +88,8 @@ This tutorial provides guidance on how to instrument a Serve app with custom tra
 
 The first step is augmenting the Serve application with OpenTelemetry traces and the FastAPIInstrumentor.
 
-```python title=serve_hello.py
-# serve_hello.py
+```python title=examples/instrumented/serve_hello.py
+# examples/instrumented/serve_hello.py
 from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
@@ -135,10 +135,10 @@ app = HelloWorld.bind()
 
 Next, define the service configuration with a service YAML.
 
-```yaml title=tracing_service.yaml
-# tracing_service.yaml
+```yaml title=examples/instrumented/tracing_service.yaml
+# examples/instrumented/tracing_service.yaml
 name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/main.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/instrumented
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0
@@ -162,7 +162,7 @@ tracing_config:
 To deploy the service, we can run the following command.
 
 ```bash
-anyscale service deploy -f tracing_service.yaml
+anyscale service deploy -f examples/instrumented/tracing_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
@@ -238,7 +238,7 @@ This tutorial provides guidance on how to export the OpenTelemetry traces to a t
 
 To export traces to a tracing backend, we need to define a tracing exporter function in `exporter_hc.py`. The tracing exporter needs to be a Python function that takes no arguments and returns a list of type `SpanProcessor`. Note, you can configure this function to return several span processors so traces are exported to multiple backends.
 
-```python title=exporter_hc.py
+```python title=examples/exporter/exporter_hc.py
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from typing import List
@@ -254,7 +254,7 @@ def honeycomb_span_processors() -> List[SpanProcessor]:
 Then define a Dockerfile and environment dependencies.
 
 ```
-# requirements.txt
+# examples/exporter/requirements.txt
 asgiref==3.8.1
 deprecated==1.2.14
 importlib-metadata==8.2.0
@@ -271,7 +271,7 @@ zipp==3.20.0
 
 ```
 
-```Dockerfile title=Dockerfile
+```Dockerfile title=examples/exporter/Dockerfile
 # Use Anyscale base image
 FROM anyscale/ray:2.51.0-slim-py311
 
@@ -300,7 +300,7 @@ After defining the Dockerfile, build and push the Docker image with the followin
 
 ```bash
 # build the Docker image
-docker build . -t my-registry/my-image:tag
+docker build examples/exporter -t my-registry/my-image:tag
 
 # push the Docker image to your registry
 docker push my-registry/my-image:tag
@@ -308,8 +308,8 @@ docker push my-registry/my-image:tag
 
 Next, define the service configuration with a service YAML and `image_uri` that points to the image. Also, define the module in `exporter_import_path` to load the span exporters when tracing is setup
 
-```yaml title=tracing_service_with_exporter.yaml
-# tracing_service_with_exporter.yaml
+```yaml title=examples/exporter/tracing_service_with_exporter.yaml
+# examples/exporter/tracing_service_with_exporter.yaml
 name: tracing-service-with-exporter
 image_uri: <IMAGE_URI>
 applications:
@@ -327,10 +327,10 @@ tracing_config:
 To deploy the service, we can run the following command.
 
 ```bash
-anyscale service deploy -f tracing_service_with_exporter.yaml
+anyscale service deploy -f examples/exporter/tracing_service_with_exporter.yaml
 ```
 
-After querying your application, Anyscale exports traces to the backend defined in `exporter_hc.py`.
+After querying your application, Anyscale exports traces to the backend defined in `examples/exporter/exporter_hc.py`.
 
 ## Propagate traces between services
 
@@ -341,7 +341,7 @@ the proper `traceparent` to the header object. The following code snippet
 demonstrates how to propagate traces between two services.
 
 ```python
-# serve_call_external_service.py
+# examples/upstream-downstream/serve_call_external_service.py
 import asyncio
 import requests
 from opentelemetry import trace
@@ -425,11 +425,11 @@ downstream_app = DownstreamApp.bind()
 
 Define the service configuration with a service YAML like below. This service
 creates two endpoints, one for the upstream service and one for the downstream service.
-The traces continue to export to the backend defined in `exporter_hc.py` from the
+The traces continue to export to the backend defined in `examples/exporter/exporter_hc.py` from the
 previous section.
 
-```yaml title=tracing_upstream_downstream_service.yaml
-# tracing_upstream_downstream_service.yaml
+```yaml title=examples/upstream-downstream/tracing_upstream_downstream_service.yaml
+# examples/upstream-downstream/tracing_upstream_downstream_service.yaml
 name: tracing-upsteam-downstream-service
 image_uri: <IMAGE_URI>
 applications:
@@ -452,7 +452,7 @@ tracing_config:
 To deploy the service, run the following command:
 
 ```bash
-anyscale service deploy -f tracing_upstream_downstream_service.yaml
+anyscale service deploy -f examples/upstream-downstream/tracing_upstream_downstream_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to Honeycomb. The spans are
@@ -474,8 +474,8 @@ Once the workspace is restarted, define the exporter function in a `exporter_dev
 file like below. This exporter function will be used to export traces to the console
 for quickly visualize the attributes on the traces.
 
-```python title=exporter_dev.py
-# exporter_dev.py
+```python title=examples/exporter/exporter_dev.py
+# examples/exporter/exporter_dev.py
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 from opentelemetry.sdk.trace import SpanProcessor
 from typing import List
@@ -486,12 +486,12 @@ def debug_span_processor() -> List[SpanProcessor]:
 
 ```
 
-And take the same `serve_hello.py` file from the previous section.
+And take the same `examples/instrumented/serve_hello.py` file from the previous section.
 
 Start the application with the following command.
 
 ```bash
-serve run serve_hello:app
+serve run examples.instrumented.serve_hello:app
 ```
 
 Open another terminal and run the following command to query the application.
@@ -615,7 +615,7 @@ ANYSCALE_TRACING_EXPORTER_IMPORT_PATH=exporter_dd:anyscale_span_processors
 ```
 
 #### Exporter function to export traces to Datadog agent
-```python title=exporter_dd.py
+```python title=examples/exporter/exporter_dd.py
 import ray
 
 from opentelemetry.context import Context
