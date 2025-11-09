@@ -17,7 +17,7 @@ Set the `tracing_config` in the service config.
 ```yaml title=default_tracing_service.yaml
 # default_tracing_service.yaml
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/main.zip
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0
@@ -138,7 +138,7 @@ Next, define the service configuration with a service YAML.
 ```yaml title=tracing_service.yaml
 # tracing_service.yaml
 name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/main.zip
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.26.0
