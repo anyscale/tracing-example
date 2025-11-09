@@ -1,4 +1,4 @@
-name: tracing-service
+name: fastapi-instrumented-tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/instrumented
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
