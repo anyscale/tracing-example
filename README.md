@@ -17,7 +17,7 @@ Set the `tracing_config` in the service config.
 ```yaml title=examples/quick-start/tracing_service.yaml
 # examples/quick-start/tracing_service.yaml
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/quick-start
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/marwan%2Fimprove-code-example.zip
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.38.0
@@ -30,8 +30,10 @@ requirements:
   - opentelemetry-exporter-prometheus==0.59b0
 applications:
   - route_prefix:  '/'
-    import_path: default_serve_hello:app
-    runtime_env: {}
+    import_path: serve_hello:app
+    runtime_env:
+      env_vars:
+        PYTHONPATH: "examples/quick-start"
 tracing_config:
   enabled: True
   sampling_ratio: 1.0
@@ -187,7 +189,7 @@ Next, define the service configuration with a service YAML.
 ```yaml title=examples/instrumented/tracing_service.yaml
 # examples/instrumented/tracing_service.yaml
 name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/instrumented
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/marwan%2Fimprove-code-example.zip
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.38.0
@@ -202,7 +204,9 @@ applications:
   - name: my_app
     route_prefix:  '/'
     import_path: serve_hello:app
-    runtime_env: {}
+    runtime_env:
+      env_vars:
+        PYTHONPATH: "examples/instrumented"
 tracing_config:
   enabled: True
   sampling_ratio: 1.0
