@@ -1,0 +1,25 @@
+name: default-tracing-service
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip
+image_uri: anyscale/ray:2.51.0-slim-py311
+requirements:
+  - opentelemetry-api==1.38.0
+  - opentelemetry-sdk==1.38.0
+  - opentelemetry-exporter-otlp-proto-http==1.38.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.38.0
+  - opentelemetry-instrumentation==0.59b0
+  - opentelemetry-distro==0.59b0
+  - opentelemetry-util-http==0.59b0
+  - opentelemetry-instrumentation-asgi==0.59b0
+  - opentelemetry-instrumentation-fastapi==0.59b0
+  - opentelemetry-exporter-prometheus==0.59b0
+applications:
+- route_prefix:  '/'
+  import_path: serve_hello:app
+  runtime_env:
+    env_vars:
+      # Required because the GitHub zip contains all examples. Tells Python where to find serve_hello.py.
+      # Not needed if your working_dir already points to the directory containing your code.
+      PYTHONPATH: "examples/quick-start"
+tracing_config:
+  enabled: True
+  sampling_ratio: 1.0

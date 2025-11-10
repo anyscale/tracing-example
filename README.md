@@ -3,6 +3,10 @@
 This guide provides three tutorials on how to add OpenTelemetry tracing for a Ray Serve applications in an
 Anyscale Service. The first tutorial provides a quick start on how to collect Ray Serve traces and view them in the Ray logs. The second tutorial provides a more in-depth example on how to instrument your application. The third details how to export traces to a tracing backend.
 
+:::note
+Ray >=2.47 is the minimum version required to use distributed tracing with FastAPI and the FastAPIInstrumentor.
+:::
+
 Note that by default, each request handled by the Serve application exports a trace that provides observability of the full span of the request.
 
 ## Getting started
@@ -10,23 +14,26 @@ Note that by default, each request handled by the Serve application exports a tr
 ## Quick start
 Set the `tracing_config` in the service config.
 
-```yaml title=default_tracing_service.yaml
-# default_tracing_service.yaml
+```yaml title=examples/quick-start/tracing_service.yaml
+# examples/quick-start/tracing_service.yaml
 name: default-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
-image_uri: anyscale/ray:2.40.0-slim-py310
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip
+image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
-  - opentelemetry-api==1.26.0
-  - opentelemetry-sdk==1.26.0
-  - opentelemetry-exporter-otlp==1.26.0
-  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
-  - opentelemetry-instrumentation==0.47b0
-  - opentelemetry-instrumentation-asgi==0.47b0
-  - opentelemetry-instrumentation-fastapi==0.47b0
+  - opentelemetry-api==1.38.0
+  - opentelemetry-sdk==1.38.0
+  - opentelemetry-exporter-otlp-proto-http==1.38.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.38.0
+  - opentelemetry-instrumentation==0.59b0
+  - opentelemetry-distro==0.59b0
+  - opentelemetry-instrumentation-fastapi==0.59b0
+  - opentelemetry-exporter-prometheus==0.59b0
 applications:
   - route_prefix:  '/'
-    import_path: default_serve_hello:app
-    runtime_env: {}
+    import_path: serve_hello:app
+    runtime_env:
+      env_vars:
+        PYTHONPATH: "examples/quick-start"
 tracing_config:
   enabled: True
   sampling_ratio: 1.0
@@ -36,33 +43,43 @@ tracing_config:
 Deploy the service using the following command.
 
 ```bash
-anyscale service deploy -f default_tracing_service.yaml
+anyscale service deploy -f examples/quick-start/tracing_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
 
-```python
+```bash
+cat /tmp/ray/session_latest/logs/serve/spans/proxy*.json
+```
+
+```json
 {
-    "name": "proxy_http_request",
+    "name": "route_to_replica HelloWorld __call__",
     "context": {
-        "trace_id": "0x88aef1ad547167b44a15479f57a6383e",
-        "span_id": "0x59989b70393625e3",
+        "trace_id": "0xf829758dcca0cea68128174d71d4f5f2",
+        "span_id": "0x1f2154f825a3b21c",
         "trace_state": "[]"
     },
     "kind": "SpanKind.SERVER",
-    "parent_id": null,
-    "start_time": "2024-05-28T18:05:04.864137Z",
-    "end_time": "2024-05-28T18:05:04.891003Z",
+    "parent_id": "0x771cf15c3798baf1",
+    "start_time": "2025-11-10T00:53:16.648448Z",
+    "end_time": "2025-11-10T00:53:16.654364Z",
     "status": {
-        "status_code": "OK"
+        "status_code": "UNSET"
     },
     "attributes": {
-        "request_id": "cf86e040-2c53-44b8-976e-55224b692141",
+        "request_id": "59ea3006-b53e-4460-882a-f576d43b9055",
         "deployment": "HelloWorld",
         "app": "default",
-        "request_type": "http",
-        "request_method": "GET",
-        "request_route_path": "/"
+        "call_method": "__call__",
+        "route": "/",
+        "multiplexed_model_id": "",
+        "is_streaming": true,
+        "is_http_request": true,
+        "is_grpc_request": false,
+        "resource.name": "route_to_replica HelloWorld __call__",
+        "http.method": "__call__",
+        "http.route": "/"
     },
     "events": [],
     "links": [],
@@ -70,7 +87,45 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
         "attributes": {
             "telemetry.sdk.language": "python",
             "telemetry.sdk.name": "opentelemetry",
-            "telemetry.sdk.version": "1.24.0",
+            "telemetry.sdk.version": "1.34.1",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "proxy_http_request HelloWorld GET /",
+    "context": {
+        "trace_id": "0xf829758dcca0cea68128174d71d4f5f2",
+        "span_id": "0x771cf15c3798baf1",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": null,
+    "start_time": "2025-11-10T00:53:16.647830Z",
+    "end_time": "2025-11-10T00:53:16.657576Z",
+    "status": {
+        "status_code": "OK"
+    },
+    "attributes": {
+        "request_id": "59ea3006-b53e-4460-882a-f576d43b9055",
+        "deployment": "HelloWorld",
+        "app": "default",
+        "request_type": "http",
+        "request_method": "GET",
+        "request_route_path": "/",
+        "resource.name": "proxy_http_request HelloWorld GET /",
+        "http.method": "GET",
+        "http.status_code": 200,
+        "http.route": "/"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.34.1",
             "service.name": "unknown_service"
         },
         "schema_url": ""
@@ -84,23 +139,24 @@ This tutorial provides guidance on how to instrument a Serve app with custom tra
 
 The first step is augmenting the Serve application with OpenTelemetry traces and the FastAPIInstrumentor.
 
-:::note
-We import `FastAPIInstrumentor` from [here](https://github.com/anyscale/tracing-example/blob/main/fp.py) to bypass an incompatibility issue with Ray Serve.
-:::
-
-```python title=serve_hello.py
-# serve_hello.py
+```python title=examples/instrumented/serve_hello.py
+# examples/instrumented/serve_hello.py
 from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.trace.status import Status, StatusCode
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from ray import serve
 from ray.anyscale.serve._private.tracing_utils import get_trace_context
 
-app = FastAPI()
-FastAPIInstrumentor().instrument_app(app)
+
+def build_fastapi_app():
+    app = FastAPI()
+    FastAPIInstrumentor().instrument_app(app)
+    return app
+
 
 @serve.deployment
-@serve.ingress(app)
+@serve.ingress(build_fastapi_app)
 class HelloWorld:
     @app.get("/")
     def hello(self):
@@ -130,24 +186,27 @@ app = HelloWorld.bind()
 
 Next, define the service configuration with a service YAML.
 
-```yaml title=tracing_service.yaml
-# tracing_service.yaml
+```yaml title=examples/instrumented/tracing_service.yaml
+# examples/instrumented/tracing_service.yaml
 name: tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/750a3d3f474aa4eff153093a1dfa2ec84a0cdf20.zip
-image_uri: anyscale/ray:2.40.0-slim-py310
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip
+image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
-  - opentelemetry-api==1.26.0
-  - opentelemetry-sdk==1.26.0
-  - opentelemetry-exporter-otlp==1.26.0
-  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
-  - opentelemetry-instrumentation==0.47b0
-  - opentelemetry-instrumentation-asgi==0.47b0
-  - opentelemetry-instrumentation-fastapi==0.47b0
+  - opentelemetry-api==1.38.0
+  - opentelemetry-sdk==1.38.0
+  - opentelemetry-exporter-otlp-proto-http==1.38.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.38.0
+  - opentelemetry-instrumentation==0.59b0
+  - opentelemetry-distro==0.59b0
+  - opentelemetry-instrumentation-fastapi==0.59b0
+  - opentelemetry-exporter-prometheus==0.59b0
 applications:
   - name: my_app
     route_prefix:  '/'
     import_path: serve_hello:app
-    runtime_env: {}
+    runtime_env:
+      env_vars:
+        PYTHONPATH: "examples/instrumented"
 tracing_config:
   enabled: True
   sampling_ratio: 1.0
@@ -157,29 +216,33 @@ tracing_config:
 To deploy the service, we can run the following command.
 
 ```bash
-anyscale service deploy -f tracing_service.yaml
+anyscale service deploy -f examples/instrumented/tracing_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
 
-```python
+```bash
+cat /tmp/ray/session_latest/logs/serve/spans/replica*.json
+```
+
+```json
 {
     "name": "application_span",
     "context": {
-        "trace_id": "0xff1e005576c03988af36a72bb53af9b0",
-        "span_id": "0xadf6ad79766eb568",
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0xfe0bd8218823708f",
         "trace_state": "[]"
     },
     "kind": "SpanKind.INTERNAL",
-    "parent_id": "0xdf94f8c2dbf8f6ff",
-    "start_time": "2024-06-04T20:52:12.558024Z",
-    "end_time": "2024-06-04T20:52:12.558047Z",
+    "parent_id": "0x5f91ee3b05879412",
+    "start_time": "2025-11-10T01:00:09.994951Z",
+    "end_time": "2025-11-10T01:00:09.994983Z",
     "status": {
         "status_code": "OK"
     },
     "attributes": {
         "deployment": "HelloWorld",
-        "replica_id": "7u8nq1c3"
+        "replica_id": "rba21irc"
     },
     "events": [],
     "links": [],
@@ -187,7 +250,7 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
         "attributes": {
             "telemetry.sdk.language": "python",
             "telemetry.sdk.name": "opentelemetry",
-            "telemetry.sdk.version": "1.24.0",
+            "telemetry.sdk.version": "1.38.0",
             "service.name": "unknown_service"
         },
         "schema_url": ""
@@ -196,20 +259,20 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
 {
     "name": "GET / http send",
     "context": {
-        "trace_id": "0xd02e60adebf4010d29f7057b373224f9",
-        "span_id": "0x13dec7bea39c7d48",
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0x39bf09e57e96de6d",
         "trace_state": "[]"
     },
     "kind": "SpanKind.INTERNAL",
-    "parent_id": "0x288b70e107316859",
-    "start_time": "2024-06-04T20:52:12.558452Z",
-    "end_time": "2024-06-04T20:52:12.558489Z",
+    "parent_id": "0x5f91ee3b05879412",
+    "start_time": "2025-11-10T01:00:09.995322Z",
+    "end_time": "2025-11-10T01:00:09.995355Z",
     "status": {
         "status_code": "UNSET"
     },
     "attributes": {
-        "http.status_code": 200,
-        "type": "http.response.start"
+        "asgi.event.type": "http.response.start",
+        "http.status_code": 200
     },
     "events": [],
     "links": [],
@@ -217,7 +280,116 @@ After querying your application, Anyscale exports traces to the `/tmp/ray/sessio
         "attributes": {
             "telemetry.sdk.language": "python",
             "telemetry.sdk.name": "opentelemetry",
-            "telemetry.sdk.version": "1.24.0",
+            "telemetry.sdk.version": "1.38.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "GET / http send",
+    "context": {
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0x6797ff778d734b7f",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0x5f91ee3b05879412",
+    "start_time": "2025-11-10T01:00:09.995595Z",
+    "end_time": "2025-11-10T01:00:09.995611Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "asgi.event.type": "http.response.body"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.38.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "GET /",
+    "context": {
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0x5f91ee3b05879412",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.INTERNAL",
+    "parent_id": "0xea8f9f83ab30915e",
+    "start_time": "2025-11-10T01:00:09.994684Z",
+    "end_time": "2025-11-10T01:00:09.995897Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "http.scheme": "https",
+        "http.host": "10.0.17.185:8000",
+        "net.host.port": 8000,
+        "http.flavor": "1.1",
+        "http.target": "/",
+        "http.url": "https://fastapi-instrumented-tracing-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com/",
+        "http.method": "GET",
+        "http.server_name": "fastapi-instrumented-tracing-service-jgz99.cld-kvedzwag2qa8i5bj.s.anyscaleuserdata.com",
+        "http.user_agent": "curl/8.7.1",
+        "net.peer.ip": "157.131.214.156",
+        "http.route": "/",
+        "http.status_code": 200
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.38.0",
+            "service.name": "unknown_service"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "name": "replica_handle_request HelloWorld __call__",
+    "context": {
+        "trace_id": "0x2a57f560a3e6c8c33f1886b9d2cbb748",
+        "span_id": "0xea8f9f83ab30915e",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": "0x6dbfcda15dbadb71",
+    "start_time": "2025-11-10T01:00:09.993521Z",
+    "end_time": "2025-11-10T01:00:09.997203Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "resource.name": "replica_handle_request HelloWorld __call__",
+        "request_id": "379879bb-da36-46d8-8665-d29ab2f0e4c1",
+        "replica_id": "rba21irc",
+        "deployment": "HelloWorld",
+        "app": "my_app",
+        "call_method": "__call__",
+        "route": "/",
+        "multiplexed_model_id": "",
+        "is_streaming": true,
+        "http.method": "GET",
+        "http.status_code": "200",
+        "http.route": "/"
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.38.0",
             "service.name": "unknown_service"
         },
         "schema_url": ""
@@ -231,56 +403,44 @@ This tutorial provides guidance on how to export the OpenTelemetry traces to a t
 
 ### Build an image containing an OpenTelemetry compatible exporter
 
-To export traces to a tracing backend, we need to define a tracing exporter function in `exporter.py`. The tracing exporter needs to be a Python function that takes no arguments and returns a list of type `SpanProcessor`. Note, you can configure this function to return several span processors so traces are exported to multiple backends.
+To export traces to a tracing backend, we need to define a tracing exporter function in `exporter_hc.py`. The tracing exporter needs to be a Python function that takes no arguments and returns a list of type `SpanProcessor`. Note, you can configure this function to return several span processors so traces are exported to multiple backends.
 
-```python title=exporter.py
-import os
-
-from opentelemetry.ext.honeycomb import HoneycombSpanExporter
-from opentelemetry.sdk.trace import SpanProcessor
+```python title=examples/exporter/exporter_hc.py
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from typing import List
-
-# Replace those with the actual values.
-HONEYCOMB_SERVICE_NAME = os.getenv("HONEYCOMB_SERVICE_NAME", "")
-HONEYCOMB_WRITE_KEY = os.getenv("HONEYCOMB_WRITE_KEY", "")
-HONEYCOMB_DATASET_NAME = os.getenv("HONEYCOMB_DATASET_NAME", "")
+from opentelemetry.sdk.trace import SpanProcessor
 
 
-def default_tracing_exporter() -> List[SpanProcessor]:
-    exporter = HoneycombSpanExporter(
-        service_name=HONEYCOMB_SERVICE_NAME,
-        writekey=HONEYCOMB_WRITE_KEY,
-        dataset=HONEYCOMB_DATASET_NAME,
-    )
-    return [BatchSpanProcessor(exporter)]
+def honeycomb_span_processors() -> List[SpanProcessor]:
+    # Reads OTEL_* env vars; no arguments needed
+    return [BatchSpanProcessor(OTLPSpanExporter())]
 
 ```
 
 Then define a Dockerfile and environment dependencies.
 
 ```
-# requirements.txt
+# examples/exporter/requirements.txt
 asgiref==3.8.1
 deprecated==1.2.14
 importlib-metadata==8.2.0
-libhoney==2.4.0
-opentelemetry-api==1.25.0
-opentelemetry-ext-honeycomb==1.3.0
-opentelemetry-instrumentation==0.46b0
-opentelemetry-instrumentation-asgi==0.46b0
-opentelemetry-instrumentation-fastapi==0.45b0
-opentelemetry-sdk==1.25.0
-opentelemetry-semantic-conventions==0.46b0
-opentelemetry-util-http==0.46b0
+opentelemetry-api==1.38.0
+opentelemetry-sdk==1.38.0
+opentelemetry-exporter-otlp-proto-http==1.38.0
+opentelemetry-exporter-otlp-proto-grpc==1.38.0
+opentelemetry-instrumentation==0.59b0
+opentelemetry-distro==0.59b0
+opentelemetry-instrumentation-fastapi==0.59b0
+opentelemetry-exporter-prometheus==0.59b0
 statsd==4.0.1
 zipp==3.20.0
 
 ```
 
-```Dockerfile title=Dockerfile
+```Dockerfile title=examples/exporter/Dockerfile
 # Use Anyscale base image
-FROM anyscale/ray:2.40.0-slim-py310
+FROM anyscale/ray:2.51.0-slim-py311
 
 # Copy the requirements file into the Docker image
 COPY requirements.txt .
@@ -289,13 +449,13 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
 
 # Copy exporter file and application definitions into the Docker image
-COPY exporter.py /home/ray/exporter.py
+COPY exporter_hc.py /home/ray/exporter_hc.py
 COPY serve_hello.py /home/ray/serve_hello.py
 
-# Set environment variables for Honeycomb
-ENV HONEYCOMB_SERVICE_NAME="my-service-name"
-ENV HONEYCOMB_WRITE_KEY="xxxxxxxxxxxxxxxxxxxxxx"
-ENV HONEYCOMB_DATASET_NAME="my-dataset-name"
+# Set environment variables for OTLP exporter
+ENV OTEL_EXPORTER_OTLP_ENDPOINT="https://api.honeycomb.io"
+ENV OTEL_EXPORTER_OTLP_HEADERS="x-honeycomb-team=your-api-key"
+ENV OTEL_SERVICE_NAME="my-service-name"
 
 # Add working directory into python path so they are importable
 ENV PYTHONPATH=/home/ray
@@ -307,7 +467,7 @@ After defining the Dockerfile, build and push the Docker image with the followin
 
 ```bash
 # build the Docker image
-docker build . -t my-registry/my-image:tag
+docker build examples/exporter -t my-registry/my-image:tag
 
 # push the Docker image to your registry
 docker push my-registry/my-image:tag
@@ -315,8 +475,8 @@ docker push my-registry/my-image:tag
 
 Next, define the service configuration with a service YAML and `image_uri` that points to the image. Also, define the module in `exporter_import_path` to load the span exporters when tracing is setup
 
-```yaml title=tracing_service_with_exporter.yaml
-# tracing_service_with_exporter.yaml
+```yaml title=examples/exporter/tracing_service_with_exporter.yaml
+# examples/exporter/tracing_service_with_exporter.yaml
 name: tracing-service-with-exporter
 image_uri: <IMAGE_URI>
 applications:
@@ -325,7 +485,7 @@ applications:
     import_path: serve_hello:app
     runtime_env: {}
 tracing_config:
-  exporter_import_path: exporter:default_tracing_exporter
+  exporter_import_path: exporter_hc:honeycomb_span_processors
   enabled: True
   sampling_ratio: 1.0
 
@@ -334,10 +494,10 @@ tracing_config:
 To deploy the service, we can run the following command.
 
 ```bash
-anyscale service deploy -f tracing_service_with_exporter.yaml
+anyscale service deploy -f examples/exporter/tracing_service_with_exporter.yaml
 ```
 
-After querying your application, Anyscale exports traces to the backend defined in `exporter.py`.
+After querying your application, Anyscale exports traces to the backend defined in `examples/exporter/exporter_hc.py`.
 
 ## Propagate traces between services
 
@@ -348,7 +508,7 @@ the proper `traceparent` to the header object. The following code snippet
 demonstrates how to propagate traces between two services.
 
 ```python
-# serve_call_external_service.py
+# examples/upstream-downstream/serve_call_external_service.py
 import asyncio
 import requests
 from opentelemetry import trace
@@ -432,11 +592,11 @@ downstream_app = DownstreamApp.bind()
 
 Define the service configuration with a service YAML like below. This service
 creates two endpoints, one for the upstream service and one for the downstream service.
-The traces continue to export to the backend defined in `exporter.py` from the
+The traces continue to export to the backend defined in `examples/exporter/exporter_hc.py` from the
 previous section.
 
-```yaml title=tracing_upstream_downstream_service.yaml
-# tracing_upstream_downstream_service.yaml
+```yaml title=examples/upstream-downstream/tracing_upstream_downstream_service.yaml
+# examples/upstream-downstream/tracing_upstream_downstream_service.yaml
 name: tracing-upsteam-downstream-service
 image_uri: <IMAGE_URI>
 applications:
@@ -449,7 +609,7 @@ applications:
     import_path: serve_call_external_service:downstream_app
     runtime_env: {}
 tracing_config:
-  exporter_import_path: exporter:default_tracing_exporter
+  exporter_import_path: exporter_hc:honeycomb_span_processors
   enabled: True
   sampling_ratio: 1.0
 
@@ -459,7 +619,7 @@ tracing_config:
 To deploy the service, run the following command:
 
 ```bash
-anyscale service deploy -f tracing_upstream_downstream_service.yaml
+anyscale service deploy -f examples/upstream-downstream/tracing_upstream_downstream_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to Honeycomb. The spans are
@@ -472,7 +632,7 @@ function. In order to start developing tracing on Workspaces, you need to define
 environment variable in after the Workspace is started.
 
 Start a workspace with the image of your choice (i.e.
-`anyscale/ray:2.40.0-slim-py312-cu123`). Then, go to the "Dependencies" tab and add
+`anyscale/ray:2.51.0-slim-py311`). Then, go to the "Dependencies" tab and add
 `ANYSCALE_TRACING_EXPORTER_IMPORT_PATH=exporter_dev:debug_span_processor` to the
 Environment Variables section. You would need to terminate and restart the workspace to
 have this environment variable take effect.
@@ -481,8 +641,8 @@ Once the workspace is restarted, define the exporter function in a `exporter_dev
 file like below. This exporter function will be used to export traces to the console
 for quickly visualize the attributes on the traces.
 
-```python title=exporter_dev.py
-# exporter_dev.py
+```python title=examples/exporter/exporter_dev.py
+# examples/exporter/exporter_dev.py
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 from opentelemetry.sdk.trace import SpanProcessor
 from typing import List
@@ -493,12 +653,12 @@ def debug_span_processor() -> List[SpanProcessor]:
 
 ```
 
-And take the same `serve_hello.py` file from the previous section.
+And take the same `examples/instrumented/serve_hello.py` file from the previous section.
 
 Start the application with the following command.
 
 ```bash
-serve run serve_hello:app
+serve run examples.instrumented.serve_hello:app
 ```
 
 Open another terminal and run the following command to query the application.
@@ -622,7 +782,7 @@ ANYSCALE_TRACING_EXPORTER_IMPORT_PATH=exporter_dd:anyscale_span_processors
 ```
 
 #### Exporter function to export traces to Datadog agent
-```python title=exporter_dd.py
+```python title=examples/exporter/exporter_dd.py
 import ray
 
 from opentelemetry.context import Context
