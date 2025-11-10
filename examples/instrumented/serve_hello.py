@@ -9,17 +9,9 @@ from ray.anyscale.serve._private.tracing_utils import get_trace_context
 def build_fastapi_app():
     app = FastAPI()
     FastAPIInstrumentor().instrument_app(app)
-    return app
 
-
-app = build_fastapi_app()
-
-
-@serve.deployment
-@serve.ingress(app)
-class HelloWorld:
     @app.get("/")
-    def hello(self):
+    async def hello():
         # Create a new span that is associated with the current trace
         tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span(
@@ -36,6 +28,14 @@ class HelloWorld:
 
             # Return message
             return "Hello world!"
+
+    return app
+
+
+@serve.deployment
+@serve.ingress(build_fastapi_app)
+class HelloWorld:
+    """Main serve deployment."""
 
 
 app = HelloWorld.bind()
