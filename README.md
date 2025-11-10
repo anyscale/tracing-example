@@ -14,8 +14,8 @@ Note that by default, each request handled by the Serve application exports a tr
 ## Quick start
 Set the `tracing_config` in the service config.
 
-```yaml title=examples/quick-start/default_tracing_service.yaml
-# examples/quick-start/default_tracing_service.yaml
+```yaml title=examples/quick-start/tracing_service.yaml
+# examples/quick-start/tracing_service.yaml
 name: default-tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/quick-start
 image_uri: anyscale/ray:2.51.0-slim-py311
@@ -41,7 +41,7 @@ tracing_config:
 Deploy the service using the following command.
 
 ```bash
-anyscale service deploy -f examples/quick-start/default_tracing_service.yaml
+anyscale service deploy -f examples/quick-start/tracing_service.yaml
 ```
 
 After querying your application, Anyscale exports traces to the `/tmp/ray/session_latest/logs/serve/spans/` folder on instances with active replicas.
