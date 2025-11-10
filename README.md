@@ -20,13 +20,14 @@ name: default-tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/quick-start
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
-  - opentelemetry-api==1.26.0
-  - opentelemetry-sdk==1.26.0
-  - opentelemetry-exporter-otlp==1.26.0
-  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
-  - opentelemetry-instrumentation==0.47b0
-  - opentelemetry-instrumentation-asgi==0.47b0
-  - opentelemetry-instrumentation-fastapi==0.47b0
+  - opentelemetry-api==1.38.0
+  - opentelemetry-sdk==1.38.0
+  - opentelemetry-exporter-otlp-proto-http==1.38.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.38.0
+  - opentelemetry-instrumentation==0.59b0
+  - opentelemetry-distro==0.59b0
+  - opentelemetry-instrumentation-fastapi==0.59b0
+  - opentelemetry-exporter-prometheus==0.59b0
 applications:
   - route_prefix:  '/'
     import_path: default_serve_hello:app
@@ -189,13 +190,14 @@ name: tracing-service
 working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip#subdirectory=examples/instrumented
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
-  - opentelemetry-api==1.26.0
-  - opentelemetry-sdk==1.26.0
-  - opentelemetry-exporter-otlp==1.26.0
-  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
-  - opentelemetry-instrumentation==0.47b0
-  - opentelemetry-instrumentation-asgi==0.47b0
-  - opentelemetry-instrumentation-fastapi==0.47b0
+  - opentelemetry-api==1.38.0
+  - opentelemetry-sdk==1.38.0
+  - opentelemetry-exporter-otlp-proto-http==1.38.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.38.0
+  - opentelemetry-instrumentation==0.59b0
+  - opentelemetry-distro==0.59b0
+  - opentelemetry-instrumentation-fastapi==0.59b0
+  - opentelemetry-exporter-prometheus==0.59b0
 applications:
   - name: my_app
     route_prefix:  '/'
@@ -419,14 +421,14 @@ Then define a Dockerfile and environment dependencies.
 asgiref==3.8.1
 deprecated==1.2.14
 importlib-metadata==8.2.0
-opentelemetry-api==1.26.0
-opentelemetry-exporter-otlp-proto-http==1.26.0
-opentelemetry-instrumentation==0.47b0
-opentelemetry-instrumentation-asgi==0.47b0
-opentelemetry-instrumentation-fastapi==0.47b0
-opentelemetry-sdk==1.26.0
-opentelemetry-semantic-conventions==0.47b0
-opentelemetry-util-http==0.47b0
+opentelemetry-api==1.38.0
+opentelemetry-sdk==1.38.0
+opentelemetry-exporter-otlp-proto-http==1.38.0
+opentelemetry-exporter-otlp-proto-grpc==1.38.0
+opentelemetry-instrumentation==0.59b0
+opentelemetry-distro==0.59b0
+opentelemetry-instrumentation-fastapi==0.59b0
+opentelemetry-exporter-prometheus==0.59b0
 statsd==4.0.1
 zipp==3.20.0
 

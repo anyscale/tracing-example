@@ -2,13 +2,16 @@ name: default-tracing-service
 working_dir: .
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
-  - opentelemetry-api==1.26.0
-  - opentelemetry-sdk==1.26.0
-  - opentelemetry-exporter-otlp==1.26.0
-  - opentelemetry-exporter-otlp-proto-grpc==1.26.0
-  - opentelemetry-instrumentation==0.47b0
-  - opentelemetry-instrumentation-asgi==0.47b0
-  - opentelemetry-instrumentation-fastapi==0.47b0
+  - opentelemetry-api==1.38.0
+  - opentelemetry-sdk==1.38.0
+  - opentelemetry-exporter-otlp-proto-http==1.38.0
+  - opentelemetry-exporter-otlp-proto-grpc==1.38.0
+  - opentelemetry-instrumentation==0.59b0
+  - opentelemetry-distro==0.59b0
+  - opentelemetry-util-http==0.59b0
+  - opentelemetry-instrumentation-asgi==0.59b0
+  - opentelemetry-instrumentation-fastapi==0.59b0
+  - opentelemetry-exporter-prometheus==0.59b0
 applications:
 - route_prefix:  '/'
   import_path: default_serve_hello:app

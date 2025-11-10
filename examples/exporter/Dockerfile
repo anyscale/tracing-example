@@ -5,7 +5,7 @@ FROM anyscale/ray:2.51.0-slim-py311
 COPY requirements.txt .
 
 # Install all dependencies specified in requirements.txt
-RUN pip install --no-cache-dir  --no-dependencies -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy exporter file and application definitions into the Docker image
 COPY exporter_hc.py /home/ray/exporter_hc.py
