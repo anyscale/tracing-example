@@ -14,7 +14,7 @@ from starlette.requests import Request
 
 @serve.deployment
 class UpstreamApp:
-    def __call__(self, request: Request):
+    async def __call__(self, request: Request):
         # Create a new span associated with the current trace.
         tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span(

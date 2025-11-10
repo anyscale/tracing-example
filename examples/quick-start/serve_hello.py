@@ -7,7 +7,7 @@ app = FastAPI()
 @serve.ingress(app)
 class HelloWorld:
     @app.get("/")
-    def hello(self):
+    async def hello(self):
         return "Hello world!"
 
 app = HelloWorld.bind()
