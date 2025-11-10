@@ -1,5 +1,5 @@
 name: fastapi-instrumented-tracing-service
-working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/marwan%2Fimprove-code-example.zip
+working_dir: https://github.com/anyscale/tracing-example/archive/refs/heads/main.zip
 image_uri: anyscale/ray:2.51.0-slim-py311
 requirements:
   - opentelemetry-api==1.38.0
